@@ -40,8 +40,9 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
         return min_distance
 
 
-    def movimientoValido(jugador, accion, cajas):
+    def movimientoValido(jugador, accion, boxes):
         nueva_coord = None
+       
         # Calcular la nueva coordenada del jugador segun la accion
         if accion == 'arriba':
             nueva_coord = (jugador[0], jugador[1] - 1)
@@ -57,7 +58,7 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
             return False
 
         # Si la nueva coordenada del jugador hace mover una caja, verificar si la caja se puede mover en la misma dirección
-        if nueva_coord in cajas:
+        if nueva_coord in boxes:
             nueva_coord_caja = None
             if accion == 'arriba':
                 nueva_coord_caja = (nueva_coord[0], nueva_coord[1] - 1)
@@ -69,7 +70,7 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
                 nueva_coord_caja = (nueva_coord[0] + 1, nueva_coord[1])
 
             # Verificar si la nueva coordenada de la caja es una pared o tiene una caja adyacente
-            if nueva_coord_caja in PAREDES or nueva_coord_caja in cajas:
+            if nueva_coord_caja in PAREDES or nueva_coord_caja in boxes:
                 return False
 
         # Si la nueva coordenada del jugador no es una pared ni una caja, es un movimiento válido
@@ -91,28 +92,28 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
 
 
 
-    def list_to_tuple(listas):
-        return tuple([tuple(x) for x in listas])
+    def list_to_tuple(lst):
+        return tuple(lst)
 
-    def tuple_to_list(tuplas):
-        return [list(x) for x in tuplas]
+
+    def tuple_to_list(tup):
+        return [coord for coord in tup]
 
 
     # listado coordenadas cajas,  posicion jugador, cantidad de movimientos máximos)
-    INITIAL = (cajas, jugador, maximos_movimientos)
+    INITIAL = (list_to_tuple(cajas), jugador, maximos_movimientos)
     class SokobanProblem(SearchProblem):
         def cost(self, state1, action, state2):
             return 1
 
         def is_goal(self, state):
-            cajas, jugador, mov_restantes = state
+            boxes, jugador, mov_restantes = state
             #Sera objetivo cuando las coordenadas de las cajas esten en la lista de objetivos.
             #Siempre y cuando los maximos movientos no se hayan alcanzado
-
+            boxes = list_to_tuple(boxes)
             for caja in cajas:
-                for objetivo in OBJETIVOS:
-                    if caja != objetivo:
-                        return False
+               if caja not in OBJETIVOS:
+                    return False
             
             if mov_restantes < 0:
                 return False
@@ -121,19 +122,19 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
 
         def actions(self, state):
             acciones_disponibles = []
-            cajas, jugador, mov_restantes = state
-
+            boxes, jugador, mov_restantes = state
+            
             #No miro mov_restantes porque deberia darse cuenta al llamar a isgoal que ya no tiene movimientos/no sirve ese camino
             coord_x, coord_y = jugador
             for accion in ACTIONS:
-                accion_disponible = movimientoValido(jugador,accion,cajas)
+                accion_disponible = movimientoValido(jugador,accion,boxes)
                 if accion_disponible:
                     acciones_disponibles.append(accion)
                             
             return acciones_disponibles
 
         def result(self, state, action):
-            cajas, jugador, mov_restantes = state
+            boxes, jugador, mov_restantes = state
            
             new_jugador_coord = nuevaCoord(jugador,action)
            
@@ -141,67 +142,82 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
 
             new_cajas = []
             #Verificar si la nueva posision hace mover una caja
-            if new_jugador_coord in cajas:
-                for caja in cajas:
+            if new_jugador_coord in boxes:
+                boxes = list_to_tuple(cajas)
+                for caja in boxes:
                     new_caja_coord = caja
                     if new_jugador_coord == caja:
                         new_caja_coord = nuevaCoord(caja,action)
                     new_cajas.append(new_caja_coord)                
-            
-            return (new_cajas,new_jugador_coord,mov_restantes)
+            if len(new_cajas) == 0 :
+                return (boxes,new_jugador_coord,mov_restantes)
+            else:
+                return (new_cajas,new_jugador_coord,mov_restantes)
+                
 
         def heuristic(self, state):
-            cajas, jugador, mov_restantes = state
+            boxes, jugador, mov_restantes = state
             #La heuristica sera suma de la distancia manhattan de cada caja con su objetivo mas cercano
             distancia = 0
-            for caja in cajas:
+            boxes = list_to_tuple(boxes)
+            for caja in boxes:
                 distancia_caja = distanciaObjetivoCercano(caja)
                 distancia += distancia_caja
             return distancia
 
     if __name__ == "__main__":
         viewer = BaseViewer()
-        
-        result = astar(SokobanProblem(INITIAL), viewer=viewer, graph_search=True)
+        result = ()
+        result = astar(SokobanProblem(INITIAL), graph_search=True, viewer=viewer)
 
-        print("Meta:",result.state)
+        if result is not None:
+            print("Estado meta:")
+            print(result.state)
 
-        for action, state in result.path():
-            if action != None:
-                secuencia.append(action[1])
-            
+            pasos=[]
+            for action, state in result.path():
+                if action is not None:
+                    fila_nueva, columna_nueva = action
+                    fila, columna = posicion_pj         
+                    if fila<fila_nueva:
+                        pasos.append("abajo")
+                    if fila>fila_nueva:
+                        pasos.append("arriba")
+                    if columna<columna_nueva:
+                        pasos.append("derecha")
+                    if columna>columna_nueva:
+                        pasos.append("izquierda")
+                posicion_pj=state[1]               
+                print("Moviendo Jugador", action, "llegué a:")
+                print(pasos)
+                print(state)
+            return pasos 
 
-        print("Profundidad:", len(list(result.path())))
-        print("Costo",result.cost)
-        print("Stats:",viewer.stats)
-        return secuencia
+        else:
+            print("No se encontró una solución para el problema de búsqueda.")
     else:
         viewer = BaseViewer()
+        secuencia = []
         result = astar(SokobanProblem(INITIAL), graph_search=True)
         for action, state in result.path():
             if action != None:
                 secuencia.append(action[1])
         return secuencia
     
-
-
-if __name__ == "__main__":
-    paredes = [
-        (0,0),(0,1),(0,2),(0,3),(0,4),(0,5),(0,6),
-        (1,0),(1,6),
-        (2,0),(2,6),
-        (3,0),(3,6),
-        (4,0),(4,6),
-        (5,0),(5,6),
-        (6,0),(6,6),
-        (7,0),(7,1),(7,2),(7,3),(7,4),(7,5),(7,6)
-    ]
-    objetivos = [(5,4)]
-    cajas = [(3,1)]
-    jugador = (1,1)
-    movimientos = 40
+# paredes = [
+#         (0,0),(0,1),(0,2),(0,3),(0,4),(0,5),(0,6),
+#         (1,0),(1,6),
+#         (2,0),(2,6),
+#         (3,0),(3,6),
+#         (4,0),(4,6),
+#         (5,0),(5,6),
+#         (6,0),(6,6),
+#         (7,0),(7,1),(7,2),(7,3),(7,4),(7,5),(7,6)
+#     ]
+# objetivos = [(5,4)]
+# cajas = [(5,3)]
+# jugador = (5,2)
+# movimientos = 40
     
-    secuencia = jugar(paredes, cajas, objetivos, jugador, movimientos)
-    print(secuencia)
-
-
+# secuencia = jugar(paredes, cajas, objetivos, jugador, movimientos)
+# print(secuencia)
