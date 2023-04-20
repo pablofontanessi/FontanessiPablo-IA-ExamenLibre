@@ -118,20 +118,20 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
             if mov_restantes < 0:
                 return False
             
+            
             return True
 
         def actions(self, state):
             acciones_disponibles = []
             boxes, jugador, mov_restantes = state
-            
-            #No miro mov_restantes porque deberia darse cuenta al llamar a isgoal que ya no tiene movimientos/no sirve ese camino
-            coord_x, coord_y = jugador
+
             for accion in ACTIONS:
-                accion_disponible = movimientoValido(jugador,accion,boxes)
-                if accion_disponible:
+
+                if movimientoValido(jugador, accion, boxes):
                     acciones_disponibles.append(accion)
-                            
+
             return acciones_disponibles
+
 
         def result(self, state, action):
             boxes, jugador, mov_restantes = state
@@ -152,8 +152,8 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
             if len(new_cajas) == 0 :
                 return (boxes,new_jugador_coord,mov_restantes)
             else:
-                return (new_cajas,new_jugador_coord,mov_restantes)
-                
+                return (list_to_tuple(new_cajas),new_jugador_coord,mov_restantes)
+                        
 
         def heuristic(self, state):
             boxes, jugador, mov_restantes = state
