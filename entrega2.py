@@ -74,7 +74,7 @@ def armar_mapa(filas, columnas, cantidad_paredes, cantidad_cajas_objetivos):
     # Iteramos las "variables que chocan", en todas sus combinaciones posibles, de a 2.
     for var1, var2 in combinations(variables_chocan, 2):
             restricciones.append(
-                ((var1,var2), no_misma_coordenada)
+                ((var1, var2), no_misma_coordenada)
             )     
    
     # Los objetivos no pueden estar en las mismas posiciones que paredes, porque impedirían ganar.

@@ -22,6 +22,8 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
     )
     
     def distancia_objetivo_cercano(box):
+        # Se declara un infinito positivo, asegurandonos que cualquier 'distance' calculada al comienzo del for
+        # sea menor que distancia_minina.
         distancia_minima = float('inf')
 
         for objetivo in objetivos:
@@ -35,7 +37,7 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
     def movimiento_valido(jugador, accion, boxes):
         nueva_coordenada = None
        
-        # Calcular la nueva coordenada del jugador segun la accion
+        # Calcular la nueva coordenada del jugador segun la accion.
         if accion == 'abajo':
             nueva_coordenada = (jugador[0] + 1, jugador[1])
         elif accion == 'arriba':
@@ -52,6 +54,7 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
         # Si la nueva coordenada del jugador hace mover una caja, verificar si la caja se puede mover en la misma dirección
         if nueva_coordenada in boxes:
             nueva_coordenada_caja = None
+
             if accion == 'abajo':
                 nueva_coordenada_caja = (nueva_coordenada[0] + 1, nueva_coordenada[1])
             elif accion == 'arriba':
@@ -61,11 +64,13 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
             elif accion == 'izquierda':
                 nueva_coordenada_caja = (nueva_coordenada[0], nueva_coordenada[1] - 1)
 
-            # Verificar si la nueva coordenada de la caja es una pared o tiene una caja adyacente
+            # Verificar si la nueva coordenada de la caja es una pared o tiene una caja adyacente.
+            # Ya que no tiene fuerza para mover de a varias cajas a la vez. Por lo que la casilla inmediatamente 
+            # siguiente a la caja (conde la misma va a terminar luego del movimiento) debe estar vacía.
             if nueva_coordenada_caja in paredes or nueva_coordenada_caja in boxes:
                 return False
 
-        # Si la nueva coordenada del jugador no es una pared ni una caja, es un movimiento válido
+        # Si la nueva coordenada del jugador no es una pared, ni la caja se mueve sobre otra caja, es un movimiento válido.
         return True
 
     def nueva_coordenada(jugador, accion):
@@ -111,44 +116,42 @@ def jugar(paredes, cajas, objetivos, jugador, maximos_movimientos):
             boxes, jugador, mov_restantes = state
 
             for accion in ACTIONS:
-
                 if movimiento_valido(jugador, accion, boxes):
                     acciones_disponibles.append(accion)
 
             return tuple(acciones_disponibles)
 
-
         def result(self, state, action):
             boxes, jugador, mov_restantes = state
+            new_jugador_coord = nueva_coordenada(jugador, action)
+            mov_restantes = mov_restantes - 1
 
-            new_jugador_coord = nueva_coordenada(jugador,action)
-
-            mov_restantes = mov_restantes -1
-
-            new_cajas = []
-            #Verificar si la nueva posición hace mover una caja
+            # Verificar si la nueva posición hace mover una caja, para crear un listado nuevo de cajas
+            # y registrar esta modificación.
             if new_jugador_coord in boxes:
-                new_boxes = []
+                new_cajas = []
                 for caja in boxes:
                     new_caja_coord = caja
                     if new_jugador_coord == caja:
-                        new_caja_coord = nueva_coordenada(caja,action)
-                    new_boxes.append(new_caja_coord)
+                        new_caja_coord = nueva_coordenada(caja, action)
+                    new_cajas.append(new_caja_coord)
             else:
-                new_boxes = boxes
+                # Se agregan las cajas tal cual a la lista, ya que no hubo un movimiento que haga mover una.
+                new_cajas = boxes
 
-            return (lista_a_tupla(new_boxes), new_jugador_coord, mov_restantes)
-
+            return (lista_a_tupla(new_cajas), new_jugador_coord, mov_restantes)
                         
 
         def heuristic(self, state):
             boxes, jugador, mov_restantes = state
-            #La heuristica sera suma de la distancia manhattan de cada caja con su objetivo mas cercano
+
+            #La heuristica sera suma de la distancia manhattan de cada caja con su objetivo mas cercano.
             distancia = 0
             boxes = lista_a_tupla(boxes)
             for caja in boxes:
                 distancia_caja = distancia_objetivo_cercano(caja)
                 distancia += distancia_caja
+
             return distancia
 
     if __name__ == "__main__":
